@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>secondthumb</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: black;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        let particles = [];
+        const numParticles = 20000;
+        let logoWidth, logoHeight, centerX, centerY;
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            initializeLogo();
+            for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function draw() {
+            background(0);
+            for (let particle of particles) {
+                particle.update();
+                particle.display();
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            initializeLogo();
+            for (let particle of particles) {
+                particle.resetPosition();
+            }
+        }
+
+        function initializeLogo() {
+            logoWidth = min(width * 0.9, height * 0.4);
+            logoHeight = logoWidth * 0.25;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+
+        function isPointInLogo(x, y) {
+            const endOvalWidth = 0.28;
+            const endOvalHeight = 1;
+            const middleOvalWidth = 0.16;
+            const middleOvalHeight = 0.8;
+            const spacing = 0.01;
+            const endOvalOffset = 0.23; // Adjusted to bring end ovals closer to middle
+
+            // Left end oval (slightly tilted)
+            if (isInEllipse(x + 1 - endOvalWidth/2 - endOvalOffset, y, endOvalWidth, endOvalHeight, -0.1)) return true;
+            
+            // Right end oval (slightly tilted)
+            if (isInEllipse(x - 1 + endOvalWidth/2 + endOvalOffset, y, endOvalWidth, endOvalHeight, 0.1)) return true;
+
+            // Four middle ovals
+            for (let i = -1.5; i <= 1.5; i += 1) {
+                if (isInEllipse(x - i * (middleOvalWidth + spacing), y, middleOvalWidth, middleOvalHeight)) return true;
+            }
+
+            return false;
+        }
+
+        function isInEllipse(x, y, width, height, rotation = 0) {
+            const cos_r = Math.cos(rotation);
+            const sin_r = Math.sin(rotation);
+            const xr = x * cos_r + y * sin_r;
+            const yr = -x * sin_r + y * cos_r;
+            return (xr * xr) / (width * width / 4) + (yr * yr) / (height * height / 4) <= 1;
+        }
+
+        class Particle {
+            constructor() {
+                this.resetPosition();
+                this.size = random(1, 2.5);
+                this.originalX = this.x;
+                this.originalY = this.y;
+            }
+
+            resetPosition() {
+                let attempt = 0;
+                do {
+                    let x = random(-1.2, 1.2);
+                    let y = random(-1, 1);
+                    if (isPointInLogo(x, y)) {
+                        this.x = map(x, -1.2, 1.2, centerX - logoWidth/2, centerX + logoWidth/2);
+                        this.y = map(y, -1, 1, centerY - logoHeight/2, centerY + logoHeight/2);
+                        this.originalX = this.x;
+                        this.originalY = this.y;
+                        break;
+                    }
+                } while (++attempt < 100);
+            }
+
+            update() {
+                let mouseDistance = dist(mouseX, mouseY, this.x, this.y);
+                if (mouseDistance < 60) {
+                    let angle = atan2(mouseY - this.y, mouseX - this.x);
+                    this.x += cos(angle) * 3;
+                    this.y += sin(angle) * 3;
+                } else {
+                    this.x = lerp(this.x, this.originalX, 0.08);
+                    this.y = lerp(this.y, this.originalY, 0.08);
+                }
+            }
+
+            display() {
+                noStroke();
+                fill(255);
+                ellipse(this.x, this.y, this.size);
+            }
+        }
+    </script>
+</body>
+</html>
